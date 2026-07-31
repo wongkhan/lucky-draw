@@ -1,83 +1,206 @@
 HTML
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Lucky Draw</title>
   <style>
     body {
-      font-family: sans-serif;
+      font-family: Arial, sans-serif;
+      background-color: #f4f6f8;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+    }
+    .card {
+      background: #ffffff;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      width: 100%;
+      max-width: 450px;
       text-align: center;
-      padding: 40px;
-      background-color: #f0f2f5;
     }
-    .box {
-      background: white;
-      max-width: 400px;
-      margin: 0 auto;
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+
+    /* Navigation Tabs */
+    .tab-buttons {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
     }
-    textarea {
-      width: 90%;
-      height: 100px;
-      margin-bottom: 15px;
+    .tab-btn {
+      flex: 1;
       padding: 10px;
-    }
-    button {
-      background: #007bff;
-      color: white;
+      font-size: 14px;
+      font-weight: bold;
+      background-color: #e9ecef;
+      color: #495057;
       border: none;
-      padding: 10px 20px;
-      font-size: 16px;
-      border-radius: 5px;
+      border-radius: 6px;
       cursor: pointer;
     }
-    #result {
-      margin-top: 20px;
+    .tab-btn.active {
+      background-color: #007bff;
+      color: #ffffff;
+    }
+
+    /* Tab Content Views */
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+    }
+
+    /* Controls */
+    textarea {
+      width: 100%;
+      height: 140px;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      box-sizing: border-box;
+      font-size: 14px;
+      resize: vertical;
+    }
+    .primary-btn {
+      margin-top: 15px;
+      padding: 12px 24px;
+      font-size: 16px;
+      font-weight: bold;
+      color: #fff;
+      background-color: #28a745;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      width: 100%;
+    }
+    .draw-btn {
+      background-color: #007bff;
+    }
+    .primary-btn:disabled { background-color: #aaa; }
+
+    .display-box {
+      margin-top: 25px;
+      padding: 20px;
+      border: 2px dashed #007bff;
+      border-radius: 8px;
+      min-height: 50px;
       font-size: 24px;
       font-weight: bold;
-      color: #28a745;
-      min-height: 35px;
+      color: #333;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .count-text {
+      font-size: 13px;
+      color: #6c757d;
+      margin-top: 8px;
     }
   </style>
 </head>
 <body>
 
-  <div class="box">
-    <h2>🎉 Lucky Draw</h2>
-    <p>Enter names (one per line):</p>
-    <textarea id="namesInput">Alice
-Bob
-Charlie
-Diana</textarea>
-    <br>
-    <button onclick="drawWinner()">Pick Winner</button>
-    <div id="result"></div>
+  <div class="card">
+    <!-- Tab Navigation Bar -->
+    <div class="tab-buttons">
+      <button class="tab-btn active" onclick="switchTab('participantsTab')">📝 Participants</button>
+      <button class="tab-btn" onclick="switchTab('drawTab')">🎉 Lucky Draw</button>
+    </div>
+
+    <!-- TAB 1: Manage Participants -->
+    <div id="participantsTab" class="tab-content active">
+      <h2>Participants List</h2>
+      <p>Enter names (one per line):</p>
+      <textarea id="participantsInput" placeholder="Alice&#10;Bob&#10;Charlie&#10;Diana"></textarea>
+      <button class="primary-btn" onclick="saveParticipants()">Save List</button>
+      <div id="saveMsg" class="count-text"></div>
+    </div>
+
+    <!-- TAB 2: Lucky Draw Menu -->
+    <div id="drawTab" class="tab-content">
+      <h2>🎉 Lucky Draw</h2>
+      <div id="participantCount" class="count-text">0 participants ready</div>
+      <div id="display" class="display-box">Ready!</div>
+      <button id="drawBtn" class="primary-btn draw-btn" onclick="pickWinner()">Pick Winner</button>
+    </div>
   </div>
 
   <script>
-    function drawWinner() {
-      var text = document.getElementById("namesInput").value;
-      var names = text.split("\n");
-      var validNames = [];
-
-      for (var i = 0; i < names.length; i++) {
-        if (names[i].trim() !== "") {
-          validNames.push(names[i].trim());
-        }
+    // Load saved participants on page load
+    window.onload = function() {
+      const savedNames = localStorage.getItem('drawParticipants');
+      if (savedNames) {
+        document.getElementById('participantsInput').value = savedNames;
       }
+      updateParticipantCount();
+    };
 
-      if (validNames.length === 0) {
-        alert("Please enter at least one name!");
+    // Tab switching handler
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+
+      document.getElementById(tabId).classList.add('active');
+      event.currentTarget.classList.add('active');
+
+      if (tabId === 'drawTab') {
+        updateParticipantCount();
+      }
+    }
+
+    // Save list to LocalStorage
+    function saveParticipants() {
+      const text = document.getElementById('participantsInput').value;
+      localStorage.setItem('drawParticipants', text);
+      document.getElementById('saveMsg').innerText = '✅ Saved successfully!';
+      setTimeout(() => { document.getElementById('saveMsg').innerText = ''; }, 2000);
+      updateParticipantCount();
+    }
+
+    // Helper to get array of valid names
+    function getNamesArray() {
+      const text = document.getElementById('participantsInput').value;
+      return text.split('\n').map(n => n.trim()).filter(n => n !== '');
+    }
+
+    function updateParticipantCount() {
+      const names = getNamesArray();
+      document.getElementById('participantCount').innerText = `${names.length} participant(s) ready`;
+    }
+
+    // Pick Winner function
+    function pickWinner() {
+      const names = getNamesArray();
+      const display = document.getElementById('display');
+      const btn = document.getElementById('drawBtn');
+
+      if (names.length === 0) {
+        alert('No participants found! Switch to the Participants tab to add names.');
         return;
       }
 
-      var randomIndex = Math.floor(Math.random() * validNames.length);
-      var winner = validNames[randomIndex];
+      btn.disabled = true;
+      let counter = 0;
+      const speed = 80;
+      const totalCycles = 30;
 
-      document.getElementById("result").innerText = "🏆 Winner: " + winner;
+      const interval = setInterval(() => {
+        const randomIndex = Math.floor(Math.random() * names.length);
+        display.innerText = names[randomIndex];
+        counter++;
+
+        if (counter >= totalCycles) {
+          clearInterval(interval);
+          const finalWinner = names[Math.floor(Math.random() * names.length)];
+          display.innerText = `🏆 ${finalWinner}!`;
+          btn.disabled = false;
+        }
+      }, speed);
     }
   </script>
 
