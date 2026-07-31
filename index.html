@@ -1,4 +1,4 @@
-HTML
+Lucky Draw
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -84,7 +84,7 @@ HTML
     .primary-btn:disabled { background-color: #aaa; }
 
     .display-box {
-      margin-top: 25px;
+      margin-top: 15px;
       padding: 20px;
       border: 2px dashed #007bff;
       border-radius: 8px;
@@ -101,6 +101,20 @@ HTML
       color: #6c757d;
       margin-top: 8px;
     }
+
+    /* Checkbox option style */
+    .option-box {
+      margin-top: 15px;
+      font-size: 14px;
+      color: #333;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .option-box input {
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
@@ -108,17 +122,16 @@ HTML
   <div class="card">
     <!-- Tab Navigation Bar -->
     <div class="tab-buttons">
-      <button class="tab-btn active" onclick="switchTab('participantsTab')">📝 Participants</button>
-      <button class="tab-btn" onclick="switchTab('drawTab')">🎉 Lucky Draw</button>
+      <button class="tab-btn active" onclick="switchTab('participantsTab', event)">📝 Participants</button>
+      <button class="tab-btn" onclick="switchTab('drawTab', event)">🎉 Lucky Draw</button>
     </div>
 
     <!-- TAB 1: Manage Participants -->
     <div id="participantsTab" class="tab-content active">
       <h2>Participants List</h2>
       <p>Enter names (one per line):</p>
-      <textarea id="participantsInput" placeholder="Alice&#10;Bob&#10;Charlie&#10;Diana"></textarea>
-      <button class="primary-btn" onclick="saveParticipants()">Save List</button>
-      <div id="saveMsg" class="count-text"></div>
+      <textarea id="participantsInput" placeholder="Alice&#10;Bob&#10;Charlie&#10;Diana" oninput="saveParticipants()"></textarea>
+      <div id="saveMsg" class="count-text">Saved to browser memory!</div>
     </div>
 
     <!-- TAB 2: Lucky Draw Menu -->
@@ -126,6 +139,13 @@ HTML
       <h2>🎉 Lucky Draw</h2>
       <div id="participantCount" class="count-text">0 participants ready</div>
       <div id="display" class="display-box">Ready!</div>
+
+      <!-- Toggle option to delete winner -->
+      <div class="option-box">
+        <input type="checkbox" id="removeWinnerCheck" checked>
+        <label for="removeWinnerCheck">Remove winner from participant list</label>
+      </div>
+
       <button id="drawBtn" class="primary-btn draw-btn" onclick="pickWinner()">Pick Winner</button>
     </div>
   </div>
@@ -141,24 +161,22 @@ HTML
     };
 
     // Tab switching handler
-    function switchTab(tabId) {
+    function switchTab(tabId, evt) {
       document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
       document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
 
       document.getElementById(tabId).classList.add('active');
-      event.currentTarget.classList.add('active');
+      evt.currentTarget.classList.add('active');
 
       if (tabId === 'drawTab') {
         updateParticipantCount();
       }
     }
 
-    // Save list to LocalStorage
+    // Save list automatically on typing
     function saveParticipants() {
       const text = document.getElementById('participantsInput').value;
       localStorage.setItem('drawParticipants', text);
-      document.getElementById('saveMsg').innerText = '✅ Saved successfully!';
-      setTimeout(() => { document.getElementById('saveMsg').innerText = ''; }, 2000);
       updateParticipantCount();
     }
 
@@ -178,13 +196,15 @@ HTML
       const names = getNamesArray();
       const display = document.getElementById('display');
       const btn = document.getElementById('drawBtn');
+      const removeCheck = document.getElementById('removeWinnerCheck');
 
       if (names.length === 0) {
-        alert('No participants found! Switch to the Participants tab to add names.');
+        alert('No participants left! Switch to the Participants tab to add more names.');
         return;
       }
 
       btn.disabled = true;
+      btn.innerText = "Drawing...";
       let counter = 0;
       const speed = 80;
       const totalCycles = 30;
@@ -196,9 +216,22 @@ HTML
 
         if (counter >= totalCycles) {
           clearInterval(interval);
-          const finalWinner = names[Math.floor(Math.random() * names.length)];
+          
+          // Select final winner
+          const winnerIndex = Math.floor(Math.random() * names.length);
+          const finalWinner = names[winnerIndex];
+          
           display.innerText = `🏆 ${finalWinner}!`;
+
+          // If checkbox is checked, remove the winner from the list
+          if (removeCheck.checked) {
+            names.splice(winnerIndex, 1);
+            document.getElementById('participantsInput').value = names.join('\n');
+            saveParticipants();
+          }
+
           btn.disabled = false;
+          btn.innerText = "Draw Next Winner";
         }
       }, speed);
     }
