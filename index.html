@@ -11,6 +11,7 @@
   <style>
     :root {
       --bg-color: #f4f6f8;
+      --bg-image: none;
       --card-bg-color: #ffffff;
       --btn-color: #007bff;
       --btn-text-color: #ffffff;
@@ -25,13 +26,18 @@
     body {
       font-family: Arial, sans-serif;
       background-color: var(--bg-color);
+      background-image: var(--bg-image);
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
+      background-repeat: no-repeat;
       display: flex;
       justify-content: center;
       align-items: center;
       min-height: 100vh;
       margin: 0;
       overflow-x: hidden;
-      transition: background-color 0.3s ease;
+      transition: background 0.3s ease;
     }
 
     /* Main Container for Draw Area */
@@ -46,7 +52,7 @@
       background: var(--card-bg-color);
       padding: 35px 30px;
       border-radius: 16px;
-      box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+      box-shadow: 0 8px 30px rgba(0,0,0,0.15);
       position: relative;
       transition: background-color 0.3s ease;
     }
@@ -272,8 +278,24 @@
       padding: 6px 10px;
       border: 1px solid #ccc;
       border-radius: 6px;
-      font-size: 14px;
+      font-size: 13px;
       width: 180px;
+    }
+    .setting-block {
+      margin-bottom: 15px;
+    }
+    .setting-block label {
+      display: block;
+      font-weight: bold;
+      font-size: 14px;
+      margin-bottom: 6px;
+    }
+    .setting-block input[type="text"] {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 13px;
     }
   </style>
 </head>
@@ -325,8 +347,21 @@
         <input type="text" id="titleInput" value="🎉 Lucky Draw" oninput="updateAppearance()">
       </div>
 
+      <div class="setting-block">
+        <label for="bgImageUrl">Background Image URL</label>
+        <input type="text" id="bgImageUrl" placeholder="https://example.com/image.jpg" oninput="updateAppearance()">
+      </div>
+
+      <div class="setting-block">
+        <label>Or Upload Background Image</label>
+        <input type="file" id="bgImageFile" accept="image/*" style="font-size: 12px; width: 100%;" onchange="handleBgImageUpload(event)">
+        <button class="secondary-btn" style="margin-top: 6px; padding: 6px; font-size: 11px;" onclick="removeBgImage()">❌ Remove Image</button>
+      </div>
+
+      <hr style="border: none; border-top: 1px solid #eee; margin: 10px 0 15px 0;">
+
       <div class="setting-item">
-        <label for="bgColor">Page Background</label>
+        <label for="bgColor">Page Fallback Color</label>
         <input type="color" id="bgColor" value="#f4f6f8" onchange="updateAppearance()">
       </div>
 
@@ -381,6 +416,7 @@
   <script>
     const defaultTheme = {
       title: "🎉 Lucky Draw",
+      bgImage: "",
       bgColor: "#f4f6f8",
       cardBgColor: "#ffffff",
       btnColor: "#007bff",
@@ -424,6 +460,7 @@
     function updateAppearance() {
       const theme = {
         title: document.getElementById('titleInput').value || "🎉 Lucky Draw",
+        bgImage: document.getElementById('bgImageUrl').value.trim(),
         bgColor: document.getElementById('bgColor').value,
         cardBgColor: document.getElementById('cardBgColor').value,
         btnColor: document.getElementById('btnColor').value,
@@ -433,15 +470,45 @@
       };
 
       applyTheme(theme);
-      localStorage.setItem('drawTheme', JSON.stringify(theme));
+      try {
+        localStorage.setItem('drawTheme', JSON.stringify(theme));
+      } catch (e) {
+        console.warn("Storage limit reached for uploaded image");
+      }
+    }
+
+    function handleBgImageUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        document.getElementById('bgImageUrl').value = e.target.result;
+        updateAppearance();
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function removeBgImage() {
+      document.getElementById('bgImageUrl').value = '';
+      document.getElementById('bgImageFile').value = '';
+      updateAppearance();
     }
 
     function applyTheme(theme) {
       document.getElementById('appTitle').innerText = theme.title;
       document.getElementById('titleInput').value = theme.title;
+      document.getElementById('bgImageUrl').value = theme.bgImage || '';
 
       const root = document.documentElement;
       root.style.setProperty('--bg-color', theme.bgColor);
+      
+      if (theme.bgImage) {
+        root.style.setProperty('--bg-image', `url("${theme.bgImage}")`);
+      } else {
+        root.style.setProperty('--bg-image', 'none');
+      }
+
       root.style.setProperty('--card-bg-color', theme.cardBgColor);
       root.style.setProperty('--btn-color', theme.btnColor);
       root.style.setProperty('--display-bg-color', theme.displayBgColor);
@@ -466,6 +533,7 @@
     }
 
     function resetAppearance() {
+      document.getElementById('bgImageFile').value = '';
       applyTheme(defaultTheme);
       localStorage.removeItem('drawTheme');
     }
