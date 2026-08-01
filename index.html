@@ -9,18 +9,29 @@
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
   <style>
+    :root {
+      --bg-color: #f4f6f8;
+      --card-bg-color: #ffffff;
+      --btn-color: #007bff;
+      --btn-text-color: #ffffff;
+      --display-bg-color: #fafafa;
+      --display-border-color: #007bff;
+      --display-text-color: #333333;
+    }
+
     * {
       box-sizing: border-box;
     }
     body {
       font-family: Arial, sans-serif;
-      background-color: #f4f6f8;
+      background-color: var(--bg-color);
       display: flex;
       justify-content: center;
       align-items: center;
       min-height: 100vh;
       margin: 0;
       overflow-x: hidden;
+      transition: background-color 0.3s ease;
     }
 
     /* Main Container for Draw Area */
@@ -32,18 +43,19 @@
     }
 
     .card {
-      background: #ffffff;
+      background: var(--card-bg-color);
       padding: 35px 30px;
       border-radius: 16px;
       box-shadow: 0 8px 25px rgba(0,0,0,0.08);
       position: relative;
+      transition: background-color 0.3s ease;
     }
 
     /* Side Panel / Drawer Styles */
     .side-panel {
       position: fixed;
       top: 0;
-      left: -380px; /* Hidden by default */
+      left: -400px; /* Hidden by default */
       width: 380px;
       height: 100vh;
       background: #ffffff;
@@ -53,6 +65,7 @@
       padding: 25px;
       display: flex;
       flex-direction: column;
+      overflow-y: auto;
     }
 
     .side-panel.open {
@@ -112,11 +125,44 @@
       color: #6c757d;
     }
 
-    /* Controls & Buttons */
+    /* Side Panel Navigation Tabs */
+    .panel-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 15px;
+      border-bottom: 1px solid #dee2e6;
+      padding-bottom: 10px;
+    }
+    .panel-tab-btn {
+      flex: 1;
+      padding: 8px;
+      font-size: 13px;
+      font-weight: bold;
+      background: #f1f3f5;
+      color: #495057;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .panel-tab-btn.active {
+      background: #007bff;
+      color: #ffffff;
+    }
+
+    .tab-view {
+      display: none;
+      flex-direction: column;
+      flex-grow: 1;
+    }
+    .tab-view.active {
+      display: flex;
+    }
+
+    /* Controls & Inputs */
     textarea {
       width: 100%;
       flex-grow: 1;
-      height: 200px;
+      min-height: 180px;
       padding: 12px;
       border: 1px solid #ccc;
       border-radius: 8px;
@@ -130,12 +176,13 @@
       padding: 14px 24px;
       font-size: 18px;
       font-weight: bold;
-      color: #fff;
-      background-color: #007bff;
+      color: var(--btn-text-color);
+      background-color: var(--btn-color);
       border: none;
       border-radius: 8px;
       cursor: pointer;
       width: 100%;
+      transition: background-color 0.2s ease;
     }
     .primary-btn:disabled { background-color: #aaa; }
 
@@ -162,16 +209,17 @@
     .display-box {
       margin-top: 20px;
       padding: 25px;
-      border: 2px dashed #007bff;
+      border: 2px dashed var(--display-border-color);
       border-radius: 12px;
       min-height: 80px;
       font-size: 28px;
       font-weight: bold;
-      color: #333;
+      color: var(--display-text-color);
       display: flex;
       align-items: center;
       justify-content: center;
-      background-color: #fafafa;
+      background-color: var(--display-bg-color);
+      transition: all 0.3s ease;
     }
     .count-text {
       font-size: 14px;
@@ -198,6 +246,35 @@
       margin-bottom: 10px;
       text-align: left;
     }
+
+    /* Appearance Settings Controls */
+    .setting-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+      font-size: 14px;
+      color: #333;
+    }
+    .setting-item label {
+      font-weight: bold;
+    }
+    .setting-item input[type="color"] {
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      width: 40px;
+      height: 35px;
+      cursor: pointer;
+      background: none;
+      padding: 2px;
+    }
+    .setting-item input[type="text"] {
+      padding: 6px 10px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 14px;
+      width: 180px;
+    }
   </style>
 </head>
 <body>
@@ -208,29 +285,79 @@
   <!-- COLLAPSIBLE SIDE PANEL -->
   <div id="sidePanel" class="side-panel">
     <div class="panel-header">
-      <h2>📝 Participants</h2>
+      <h2>⚙️ Settings</h2>
       <button class="close-btn" onclick="closePanel()">&times;</button>
     </div>
-    
-    <div class="hint-text">Format: <code>Name - Entries</code> (e.g. <code>AAA - 5</code>)</div>
-    <textarea id="participantsInput" placeholder="AAA - 5&#10;BBB - 1&#10;Charlie - 3" oninput="saveParticipants()"></textarea>
-    
-    <!-- Hidden File Input supporting Excel & Text -->
-    <input type="file" id="fileImporter" accept=".xlsx,.xls,.csv,.txt" style="display: none;" onchange="handleFileImport(event)">
 
-    <!-- Import & Clear Buttons -->
-    <div class="import-group">
-      <button class="secondary-btn" onclick="document.getElementById('fileImporter').click()">📊 Import Excel/TXT</button>
-      <button class="secondary-btn" onclick="clearAllParticipants()">🗑️ Clear All</button>
+    <!-- Panel Tabs -->
+    <div class="panel-tabs">
+      <button class="panel-tab-btn active" onclick="switchPanelTab('participantsTab', event)">📝 Participants</button>
+      <button class="panel-tab-btn" onclick="switchPanelTab('appearanceTab', event)">🎨 Appearance</button>
     </div>
 
-    <!-- Move Option Box to Side Panel -->
-    <div class="option-box">
-      <input type="checkbox" id="removeWinnerCheck" checked>
-      <label for="removeWinnerCheck">Remove winner from list on draw</label>
+    <!-- TAB 1: PARTICIPANTS -->
+    <div id="participantsTab" class="tab-view active">
+      <div class="hint-text">Format: <code>Name - Entries</code> (e.g. <code>AAA - 5</code>)</div>
+      <textarea id="participantsInput" placeholder="AAA - 5&#10;BBB - 1&#10;Charlie - 3" oninput="saveParticipants()"></textarea>
+      
+      <!-- Hidden File Input supporting Excel & Text -->
+      <input type="file" id="fileImporter" accept=".xlsx,.xls,.csv,.txt" style="display: none;" onchange="handleFileImport(event)">
+
+      <!-- Import & Clear Buttons -->
+      <div class="import-group">
+        <button class="secondary-btn" onclick="document.getElementById('fileImporter').click()">📊 Import Excel/TXT</button>
+        <button class="secondary-btn" onclick="clearAllParticipants()">🗑️ Clear All</button>
+      </div>
+
+      <!-- Option Box -->
+      <div class="option-box">
+        <input type="checkbox" id="removeWinnerCheck" checked>
+        <label for="removeWinnerCheck">Remove winner from list on draw</label>
+      </div>
+
+      <div id="saveMsg" class="count-text" style="text-align: center;">Saved to browser memory!</div>
     </div>
 
-    <div id="saveMsg" class="count-text" style="text-align: center;">Saved to browser memory!</div>
+    <!-- TAB 2: APPEARANCE SETTINGS -->
+    <div id="appearanceTab" class="tab-view">
+      <div class="setting-item">
+        <label for="titleInput">Title Text</label>
+        <input type="text" id="titleInput" value="🎉 Lucky Draw" oninput="updateAppearance()">
+      </div>
+
+      <div class="setting-item">
+        <label for="bgColor">Page Background</label>
+        <input type="color" id="bgColor" value="#f4f6f8" onchange="updateAppearance()">
+      </div>
+
+      <div class="setting-item">
+        <label for="cardBgColor">Card Background</label>
+        <input type="color" id="cardBgColor" value="#ffffff" onchange="updateAppearance()">
+      </div>
+
+      <div class="setting-item">
+        <label for="btnColor">Button Color</label>
+        <input type="color" id="btnColor" value="#007bff" onchange="updateAppearance()">
+      </div>
+
+      <div class="setting-item">
+        <label for="displayBgColor">Display Box Fill</label>
+        <input type="color" id="displayBgColor" value="#fafafa" onchange="updateAppearance()">
+      </div>
+
+      <div class="setting-item">
+        <label for="displayBorderColor">Display Box Border</label>
+        <input type="color" id="displayBorderColor" value="#007bff" onchange="updateAppearance()">
+      </div>
+
+      <div class="setting-item">
+        <label for="displayTextColor">Display Text Color</label>
+        <input type="color" id="displayTextColor" value="#333333" onchange="updateAppearance()">
+      </div>
+
+      <button class="secondary-btn" style="margin-top: 15px;" onclick="resetAppearance()">🔄 Reset Default Theme</button>
+    </div>
+
   </div>
 
   <!-- MAIN LUCKY DRAW SCREEN -->
@@ -239,10 +366,10 @@
       
       <!-- Panel Expand Trigger -->
       <button class="toggle-panel-btn" onclick="openPanel()">
-        ⚙️ Manage List
+        ⚙️ Settings
       </button>
 
-      <h1 style="margin-top: 30px; margin-bottom: 5px;">🎉 Lucky Draw</h1>
+      <h1 id="appTitle" style="margin-top: 30px; margin-bottom: 5px;">🎉 Lucky Draw</h1>
       <div id="participantCount" class="count-text">0 unique participants (0 total entries)</div>
 
       <div id="display" class="display-box">Ready!</div>
@@ -252,15 +379,29 @@
   </div>
 
   <script>
+    const defaultTheme = {
+      title: "🎉 Lucky Draw",
+      bgColor: "#f4f6f8",
+      cardBgColor: "#ffffff",
+      btnColor: "#007bff",
+      displayBgColor: "#fafafa",
+      displayBorderColor: "#007bff",
+      displayTextColor: "#333333"
+    };
+
     window.onload = function() {
+      // Load Participants
       const savedNames = localStorage.getItem('drawParticipants');
       if (savedNames) {
         document.getElementById('participantsInput').value = savedNames;
       }
       updateParticipantCount();
+
+      // Load Appearance Settings
+      loadAppearance();
     };
 
-    // Panel Expand/Collapse Functions
+    // Panel Navigation Functions
     function openPanel() {
       document.getElementById('sidePanel').classList.add('open');
       document.getElementById('backdrop').classList.add('active');
@@ -271,13 +412,71 @@
       document.getElementById('backdrop').classList.remove('active');
     }
 
+    function switchPanelTab(tabId, evt) {
+      document.querySelectorAll('.tab-view').forEach(tab => tab.classList.remove('active'));
+      document.querySelectorAll('.panel-tab-btn').forEach(btn => btn.classList.remove('active'));
+
+      document.getElementById(tabId).classList.add('active');
+      evt.currentTarget.classList.add('active');
+    }
+
+    // Appearance Theme Handling
+    function updateAppearance() {
+      const theme = {
+        title: document.getElementById('titleInput').value || "🎉 Lucky Draw",
+        bgColor: document.getElementById('bgColor').value,
+        cardBgColor: document.getElementById('cardBgColor').value,
+        btnColor: document.getElementById('btnColor').value,
+        displayBgColor: document.getElementById('displayBgColor').value,
+        displayBorderColor: document.getElementById('displayBorderColor').value,
+        displayTextColor: document.getElementById('displayTextColor').value
+      };
+
+      applyTheme(theme);
+      localStorage.setItem('drawTheme', JSON.stringify(theme));
+    }
+
+    function applyTheme(theme) {
+      document.getElementById('appTitle').innerText = theme.title;
+      document.getElementById('titleInput').value = theme.title;
+
+      const root = document.documentElement;
+      root.style.setProperty('--bg-color', theme.bgColor);
+      root.style.setProperty('--card-bg-color', theme.cardBgColor);
+      root.style.setProperty('--btn-color', theme.btnColor);
+      root.style.setProperty('--display-bg-color', theme.displayBgColor);
+      root.style.setProperty('--display-border-color', theme.displayBorderColor);
+      root.style.setProperty('--display-text-color', theme.displayTextColor);
+
+      document.getElementById('bgColor').value = theme.bgColor;
+      document.getElementById('cardBgColor').value = theme.cardBgColor;
+      document.getElementById('btnColor').value = theme.btnColor;
+      document.getElementById('displayBgColor').value = theme.displayBgColor;
+      document.getElementById('displayBorderColor').value = theme.displayBorderColor;
+      document.getElementById('displayTextColor').value = theme.displayTextColor;
+    }
+
+    function loadAppearance() {
+      const savedTheme = localStorage.getItem('drawTheme');
+      if (savedTheme) {
+        applyTheme(JSON.parse(savedTheme));
+      } else {
+        applyTheme(defaultTheme);
+      }
+    }
+
+    function resetAppearance() {
+      applyTheme(defaultTheme);
+      localStorage.removeItem('drawTheme');
+    }
+
+    // Data Management Functions
     function saveParticipants() {
       const text = document.getElementById('participantsInput').value;
       localStorage.setItem('drawParticipants', text);
       updateParticipantCount();
     }
 
-    // Parses raw lines into structured objects
     function getParsedParticipants() {
       const text = document.getElementById('participantsInput').value;
       const lines = text.split('\n');
@@ -396,7 +595,7 @@
       const removeCheck = document.getElementById('removeWinnerCheck');
 
       if (pool.length === 0) {
-        alert('No entries left! Click "⚙️ Manage List" on the top left to add participants.');
+        alert('No entries left! Click "⚙️ Settings" on the top left to add participants.');
         return;
       }
 
