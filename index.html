@@ -116,7 +116,7 @@
     textarea {
       width: 100%;
       flex-grow: 1;
-      height: 220px;
+      height: 200px;
       padding: 12px;
       border: 1px solid #ccc;
       border-radius: 8px;
@@ -126,7 +126,7 @@
     }
 
     .primary-btn {
-      margin-top: 15px;
+      margin-top: 20px;
       padding: 14px 24px;
       font-size: 18px;
       font-weight: bold;
@@ -180,12 +180,13 @@
     }
 
     .option-box {
-      margin-top: 20px;
-      font-size: 14px;
+      margin-top: 15px;
+      padding-top: 10px;
+      border-top: 1px solid #eee;
+      font-size: 13px;
       color: #333;
       display: flex;
       align-items: center;
-      justify-content: center;
       gap: 8px;
     }
     .option-box input {
@@ -223,6 +224,12 @@
       <button class="secondary-btn" onclick="clearAllParticipants()">🗑️ Clear All</button>
     </div>
 
+    <!-- Move Option Box to Side Panel -->
+    <div class="option-box">
+      <input type="checkbox" id="removeWinnerCheck" checked>
+      <label for="removeWinnerCheck">Remove winner from list on draw</label>
+    </div>
+
     <div id="saveMsg" class="count-text" style="text-align: center;">Saved to browser memory!</div>
   </div>
 
@@ -239,11 +246,6 @@
       <div id="participantCount" class="count-text">0 unique participants (0 total entries)</div>
 
       <div id="display" class="display-box">Ready!</div>
-
-      <div class="option-box">
-        <input type="checkbox" id="removeWinnerCheck" checked>
-        <label for="removeWinnerCheck">Remove winner from participant list</label>
-      </div>
 
       <button id="drawBtn" class="primary-btn" onclick="pickWinner()">Pick Winner</button>
     </div>
