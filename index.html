@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Lucky Draw - Presenter Mode</title>
+  <title>Lucky Draw - Presenter Mode & History</title>
   
   <!-- SheetJS Library for Excel File Processing -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -89,19 +89,26 @@
       pointer-events: auto;
     }
 
-    /* 3-Dash Settings Icon */
+    .top-btn-group {
+      display: flex;
+      gap: 10px;
+    }
+
+    /* Settings & History Action Icon Buttons */
     .toggle-panel-btn {
-      width: 44px;
       height: 44px;
+      padding: 0 16px;
       background: rgba(255, 255, 255, 0.25);
       color: var(--text-main);
       border: 1px solid rgba(255, 255, 255, 0.4);
       border-radius: 12px;
-      font-size: 24px;
+      font-size: 15px;
+      font-weight: 600;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
+      gap: 6px;
       box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
       backdrop-filter: blur(10px);
       -webkit-backdrop-filter: blur(10px);
@@ -112,7 +119,7 @@
       transform: scale(1.05);
     }
     body.presenter-mode .toggle-panel-btn {
-      display: none !important; /* Hide setup menu in presenter mode */
+      display: none !important; /* Hide setup menus in presenter mode */
     }
 
     /* Presenter Mode Toggle Button */
@@ -277,17 +284,16 @@
       100% { background-position: 0% 50%; }
     }
 
-    /* SIDE PANEL / DRAWER STYLES */
+    /* SIDE PANELS (LEFT & RIGHT DRAWERS) */
     .side-panel {
       position: fixed;
       top: 0;
-      left: -400px;
       width: 380px;
       max-width: 85vw;
       height: 100vh;
       background: #ffffff;
-      box-shadow: 4px 0 20px rgba(0,0,0,0.15);
-      transition: left 0.3s ease-in-out;
+      box-shadow: 0 0 20px rgba(0,0,0,0.15);
+      transition: all 0.3s ease-in-out;
       z-index: 100;
       padding: 25px;
       display: flex;
@@ -295,8 +301,20 @@
       overflow-y: auto;
     }
 
-    .side-panel.open {
+    /* Settings Left Drawer */
+    #sidePanel {
+      left: -400px;
+    }
+    #sidePanel.open {
       left: 0;
+    }
+
+    /* Winner History Right Drawer */
+    #historyPanel {
+      right: -400px;
+    }
+    #historyPanel.open {
+      right: 0;
     }
 
     .backdrop {
@@ -391,6 +409,7 @@
       border: 1px solid #ced4da;
       border-radius: 8px;
       cursor: pointer;
+      transition: all 0.2s ease;
     }
     .secondary-btn:hover {
       background-color: #e2e6ea;
@@ -398,13 +417,62 @@
 
     .option-box {
       margin-top: 15px;
-      padding-top: 10px;
-      border-top: 1px solid #eee;
+      padding: 12px;
+      background: #f8f9fa;
+      border-radius: 8px;
       font-size: 13px;
       color: #333;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
+      border: 1px solid #e9ecef;
+    }
+
+    /* WINNER HISTORY LIST ITEMS */
+    .history-list {
+      list-style: none;
+      padding: 0;
+      margin: 15px 0 0 0;
+      flex-grow: 1;
+      overflow-y: auto;
+    }
+
+    .history-item {
+      background: #f8f9fa;
+      border-left: 4px solid #28a745;
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.03);
+    }
+
+    .history-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .history-name {
+      font-weight: bold;
+      font-size: 15px;
+      color: #212529;
+    }
+
+    .history-meta {
+      font-size: 11px;
+      color: #6c757d;
+    }
+
+    .history-badge {
+      background: #e2e8f0;
+      color: #334155;
+      font-size: 11px;
+      font-weight: bold;
+      padding: 4px 8px;
+      border-radius: 12px;
     }
 
     .setting-item {
@@ -553,10 +621,17 @@
 
   <!-- TOP ACTION CONTROLS -->
   <div class="top-controls">
-    <!-- Transparent White Settings Button -->
-    <button class="toggle-panel-btn" onclick="openPanel()" title="Settings">
-      &#9776;
-    </button>
+    <div class="top-btn-group">
+      <!-- Settings Panel Button -->
+      <button class="toggle-panel-btn" onclick="openPanel('sidePanel')" title="Settings">
+        ⚙️ Settings
+      </button>
+
+      <!-- Winner History Drawer Button -->
+      <button class="toggle-panel-btn" onclick="openPanel('historyPanel')" title="Winner History Log">
+        🏆 History (<span id="historyCount">0</span>)
+      </button>
+    </div>
 
     <!-- Presenter Mode Toggle Button -->
     <button class="presenter-btn" onclick="togglePresenterMode()" title="Toggle Event View (Key: F)">
@@ -565,14 +640,14 @@
     </button>
   </div>
 
-  <!-- Background Overlay for Side Panel -->
-  <div id="backdrop" class="backdrop" onclick="closePanel()"></div>
+  <!-- Background Overlay for Side Panels -->
+  <div id="backdrop" class="backdrop" onclick="closeAllPanels()"></div>
 
-  <!-- COLLAPSIBLE SIDE PANEL -->
+  <!-- LEFT PANEL: SETTINGS & PARTICIPANTS -->
   <div id="sidePanel" class="side-panel">
     <div class="panel-header">
       <h2>⚙️ Settings</h2>
-      <button class="close-btn" onclick="closePanel()">&times;</button>
+      <button class="close-btn" onclick="closeAllPanels()">&times;</button>
     </div>
 
     <!-- Panel Tabs -->
@@ -593,12 +668,6 @@
       <div class="import-group">
         <button class="secondary-btn" onclick="document.getElementById('fileImporter').click()">📊 Import File</button>
         <button class="secondary-btn" onclick="clearAllParticipants()">🗑️ Clear All</button>
-      </div>
-
-      <!-- Option Box -->
-      <div class="option-box">
-        <input type="checkbox" id="removeWinnerCheck" checked>
-        <label for="removeWinnerCheck">Remove winner from list on draw</label>
       </div>
 
       <div id="saveMsg" class="count-text" style="text-align: center;">Saved to browser memory!</div>
@@ -656,7 +725,31 @@
 
       <button class="secondary-btn" style="margin-top: 15px;" onclick="resetAppearance()">🔄 Reset Default Theme</button>
     </div>
+  </div>
 
+  <!-- RIGHT PANEL: WINNER HISTORY LOG -->
+  <div id="historyPanel" class="side-panel">
+    <div class="panel-header">
+      <h2>🏆 Winner History</h2>
+      <button class="close-btn" onclick="closeAllPanels()">&times;</button>
+    </div>
+
+    <!-- Live Auto-Removal Rules Toggle -->
+    <div class="option-box">
+      <input type="checkbox" id="removeWinnerCheck" checked onchange="saveRuleSetting()">
+      <label for="removeWinnerCheck" style="font-weight: 600; cursor: pointer;">Automatically remove winners from future draws</label>
+    </div>
+
+    <!-- History List View -->
+    <ul id="historyList" class="history-list">
+      <!-- Winner items injected via JS -->
+    </ul>
+
+    <!-- Export & Clear History Controls -->
+    <div class="import-group" style="margin-top: auto;">
+      <button class="secondary-btn" style="background-color: #28a745; color: white; border: none;" onclick="exportWinnerHistoryCSV()">💾 Export Log (CSV)</button>
+      <button class="secondary-btn" onclick="clearWinnerHistory()">🗑️ Clear History</button>
+    </div>
   </div>
 
   <!-- MAIN LUCKY DRAW SCREEN -->
@@ -696,6 +789,8 @@
       displayTextColor: "#333333"
     };
 
+    let winnerHistoryLog = [];
+
     window.onload = function() {
       // Load Participants
       const savedNames = localStorage.getItem('drawParticipants');
@@ -704,12 +799,32 @@
       }
       updateParticipantCount();
 
+      // Load Removal Rule Preference
+      const savedRule = localStorage.getItem('removeWinnerRule');
+      if (savedRule !== null) {
+        document.getElementById('removeWinnerCheck').checked = (savedRule === 'true');
+      }
+
+      // Load Winner History Log
+      const savedHistory = localStorage.getItem('winnerHistoryLog');
+      if (savedHistory) {
+        try {
+          winnerHistoryLog = JSON.parse(savedHistory);
+          renderWinnerHistory();
+        } catch(e) { winnerHistoryLog = []; }
+      }
+
       // Load Appearance Settings
       loadAppearance();
 
       // Initialize Ambient Particles
       initParticles();
     };
+
+    function saveRuleSetting() {
+      const isChecked = document.getElementById('removeWinnerCheck').checked;
+      localStorage.setItem('removeWinnerRule', isChecked);
+    }
 
     // PRESENTER MODE TOGGLE
     function togglePresenterMode() {
@@ -720,9 +835,8 @@
       if (isPresenter) {
         btnText.innerText = "Exit Presenter";
         btnIcon.innerText = "✕";
-        closePanel();
+        closeAllPanels();
 
-        // Trigger native Fullscreen if supported
         if (document.documentElement.requestFullscreen) {
           document.documentElement.requestFullscreen().catch(() => {});
         }
@@ -739,7 +853,6 @@
     // Keyboard Shortcuts for Presenter Mode
     document.addEventListener('keydown', function(e) {
       if (e.key === 'f' || e.key === 'F') {
-        // Prevent toggle if actively typing in text fields
         if (['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
         togglePresenterMode();
       }
@@ -808,14 +921,15 @@
       animate();
     }
 
-    // Panel Navigation Functions
-    function openPanel() {
-      document.getElementById('sidePanel').classList.add('open');
+    // Drawer Panels Navigation Functions
+    function openPanel(panelId) {
+      closeAllPanels();
+      document.getElementById(panelId).classList.add('open');
       document.getElementById('backdrop').classList.add('active');
     }
 
-    function closePanel() {
-      document.getElementById('sidePanel').classList.remove('open');
+    function closeAllPanels() {
+      document.querySelectorAll('.side-panel').forEach(p => p.classList.remove('open'));
       document.getElementById('backdrop').classList.remove('active');
     }
 
@@ -909,7 +1023,7 @@
       localStorage.removeItem('drawTheme');
     }
 
-    // Data Management Functions
+    // Data & Participant Management
     function saveParticipants() {
       const text = document.getElementById('participantsInput').value;
       localStorage.setItem('drawParticipants', text);
@@ -1025,6 +1139,78 @@
       }
     }
 
+    // WINNER HISTORY LOGGING & EXPORT
+    function recordWinnerHistory(winnerName, remainingEntries) {
+      const timestamp = new Date().toLocaleString();
+      const logItem = {
+        name: winnerName,
+        time: timestamp,
+        remaining: remainingEntries
+      };
+
+      winnerHistoryLog.unshift(logItem); // Add to top of list
+      localStorage.setItem('winnerHistoryLog', JSON.stringify(winnerHistoryLog));
+      renderWinnerHistory();
+    }
+
+    function renderWinnerHistory() {
+      const listEl = document.getElementById('historyList');
+      const countEl = document.getElementById('historyCount');
+      
+      countEl.innerText = winnerHistoryLog.length;
+
+      if (winnerHistoryLog.length === 0) {
+        listEl.innerHTML = '<li style="text-align: center; color: #6c757d; margin-top: 30px; font-size: 14px;">No winners drawn yet.</li>';
+        return;
+      }
+
+      listEl.innerHTML = winnerHistoryLog.map(item => `
+        <li class="history-item">
+          <div class="history-info">
+            <span class="history-name">${escapeHtml(item.name)}</span>
+            <span class="history-meta">🕒 ${item.time}</span>
+          </div>
+          <span class="history-badge">${item.remaining} left</span>
+        </li>
+      `).join('');
+    }
+
+    function exportWinnerHistoryCSV() {
+      if (winnerHistoryLog.length === 0) {
+        alert("No winner history to export!");
+        return;
+      }
+
+      let csvContent = "data:text/csv;charset=utf-8,Draw #,Winner Name,Timestamp,Remaining Entries\n";
+      
+      winnerHistoryLog.forEach((item, idx) => {
+        const drawNumber = winnerHistoryLog.length - idx;
+        const cleanName = `"${item.name.replace(/"/g, '""')}"`;
+        const cleanTime = `"${item.time}"`;
+        csvContent += `${drawNumber},${cleanName},${cleanTime},${item.remaining}\n`;
+      });
+
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", `Lucky_Draw_Winners_${new Date().toISOString().slice(0,10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    function clearWinnerHistory() {
+      if (confirm("Are you sure you want to clear the winner history log?")) {
+        winnerHistoryLog = [];
+        localStorage.removeItem('winnerHistoryLog');
+        renderWinnerHistory();
+      }
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+
     // Modal & Confetti Functions
     function showWinnerModal(winnerName) {
       document.getElementById('modalWinnerName').innerText = winnerName;
@@ -1044,6 +1230,7 @@
       document.getElementById('winnerModal').classList.remove('active');
     }
 
+    // PICK WINNER EXECUTION
     function pickWinner() {
       const parsedList = getParsedParticipants();
       const pool = buildWeightedPool(parsedList);
@@ -1075,15 +1262,24 @@
           
           display.innerText = `🏆 ${finalWinner}!`;
 
-          // Show Congratulations Popup Modal
-          showWinnerModal(finalWinner);
-
+          // Handle Winner Removal or Entry Decrement
+          let remainingEntries = 0;
           if (removeCheck.checked) {
             const updatedList = parsedList.filter(item => item.name !== finalWinner);
             const newText = updatedList.map(item => `${item.name} - ${item.count}`).join('\n');
             document.getElementById('participantsInput').value = newText;
             saveParticipants();
+            remainingEntries = 0;
+          } else {
+            const winnerObj = parsedList.find(item => item.name === finalWinner);
+            remainingEntries = winnerObj ? winnerObj.count : 1;
           }
+
+          // Record Winner to History Log
+          recordWinnerHistory(finalWinner, remainingEntries);
+
+          // Show Congratulations Popup Modal
+          showWinnerModal(finalWinner);
 
           btn.disabled = false;
           btn.innerText = "Draw Next Winner";
