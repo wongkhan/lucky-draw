@@ -7,6 +7,8 @@
   
   <!-- SheetJS Library for Excel File Processing -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <!-- JS Canvas Confetti Library -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
   <style>
     :root {
@@ -27,7 +29,6 @@
       font-family: Arial, sans-serif;
       background-color: var(--bg-color);
       background-image: var(--bg-image);
-      /* Fits the image exactly to 100% width and 100% height of the screen */
       background-size: 100% 100%;
       background-position: center;
       background-attachment: fixed;
@@ -298,6 +299,70 @@
       border-radius: 6px;
       font-size: 13px;
     }
+
+    /* WINNER POPUP MODAL STYLES */
+    .winner-modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.7);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 200;
+      animation: fadeIn 0.3s ease;
+    }
+    .winner-modal-overlay.active {
+      display: flex;
+    }
+
+    .winner-card {
+      background: #ffffff;
+      padding: 40px 30px;
+      border-radius: 20px;
+      text-align: center;
+      width: 90%;
+      max-width: 450px;
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+      animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .winner-title {
+      font-size: 28px;
+      font-weight: 800;
+      color: #28a745;
+      margin: 0 0 10px 0;
+    }
+
+    .winner-name {
+      font-size: 36px;
+      font-weight: bold;
+      color: #333333;
+      margin: 20px 0;
+      padding: 15px;
+      background: #f8f9fa;
+      border-radius: 12px;
+      border: 2px dashed #28a745;
+      word-break: break-word;
+    }
+
+    .modal-btn-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes popIn {
+      from { transform: scale(0.7); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
   </style>
 </head>
 <body>
@@ -411,6 +476,20 @@
       <div id="display" class="display-box">Ready!</div>
 
       <button id="drawBtn" class="primary-btn" onclick="pickWinner()">Pick Winner</button>
+    </div>
+  </div>
+
+  <!-- CONGRATULATIONS WINNER POPUP MODAL -->
+  <div id="winnerModal" class="winner-modal-overlay">
+    <div class="winner-card">
+      <div class="winner-title">🎉 Congratulations! 🎉</div>
+      <div style="font-size: 16px; color: #6c757d;">The winner is:</div>
+      <div id="modalWinnerName" class="winner-name">Name</div>
+      
+      <div class="modal-btn-group">
+        <button class="secondary-btn" onclick="closeWinnerModal()">Close</button>
+        <button class="primary-btn" style="margin-top: 0;" onclick="closeWinnerModal(); pickWinner();">Draw Next Winner</button>
+      </div>
     </div>
   </div>
 
@@ -656,6 +735,25 @@
       }
     }
 
+    // Modal & Confetti Functions
+    function showWinnerModal(winnerName) {
+      document.getElementById('modalWinnerName').innerText = winnerName;
+      document.getElementById('winnerModal').classList.add('active');
+      
+      // Fire Confetti Celebration
+      if (typeof confetti === 'function') {
+        confetti({
+          particleCount: 100,
+          spread: 70,
+          origin: { y: 0.6 }
+        });
+      }
+    }
+
+    function closeWinnerModal() {
+      document.getElementById('winnerModal').classList.remove('active');
+    }
+
     function pickWinner() {
       const parsedList = getParsedParticipants();
       const pool = buildWeightedPool(parsedList);
@@ -686,6 +784,9 @@
           const finalWinner = pool[winnerIndex];
           
           display.innerText = `🏆 ${finalWinner}!`;
+
+          // Show Congratulations Popup Modal
+          showWinnerModal(finalWinner);
 
           if (removeCheck.checked) {
             const updatedList = parsedList.filter(item => item.name !== finalWinner);
