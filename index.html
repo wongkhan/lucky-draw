@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Lucky Draw</title>
+  <title>Lucky Draw - Presenter Mode</title>
   
   <!-- SheetJS Library for Excel File Processing -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -20,16 +20,30 @@
       --display-bg-color: #fafafa;
       --display-border-color: #007bff;
       --display-text-color: #333333;
+      --text-main: #333333;
+      --panel-bg: #ffffff;
+    }
+
+    /* PRESENTER MODE THEME OVERRIDES */
+    body.presenter-mode {
+      --bg-color: #0b0f19;
+      --card-bg-color: rgba(23, 31, 51, 0.75);
+      --btn-color: linear-gradient(135deg, #6366f1, #a855f7, #ec4899);
+      --btn-text-color: #ffffff;
+      --display-bg-color: rgba(15, 23, 42, 0.85);
+      --display-border-color: #a855f7;
+      --display-text-color: #f8fafc;
+      --text-main: #f8fafc;
     }
 
     * {
       box-sizing: border-box;
     }
     body {
-      font-family: Arial, sans-serif;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       background-color: var(--bg-color);
       background-image: var(--bg-image);
-      background-size: 100% 100%;
+      background-size: cover;
       background-position: center;
       background-attachment: fixed;
       background-repeat: no-repeat;
@@ -39,62 +53,235 @@
       min-height: 100vh;
       margin: 0;
       overflow-x: hidden;
-      transition: background 0.3s ease;
+      transition: background 0.5s ease, color 0.5s ease;
       position: relative;
     }
 
-    /* Transparent White 3-Dash Settings Icon at Webpage Upper Left */
-    .toggle-panel-btn {
+    /* AMBIENT PARTICLES CANVAS */
+    #particleCanvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      pointer-events: none;
+      z-index: 1;
+      opacity: 0;
+      transition: opacity 1s ease;
+    }
+    body.presenter-mode #particleCanvas {
+      opacity: 1;
+    }
+
+    /* TOP ACTION BUTTONS (TOGGLES) */
+    .top-controls {
       position: fixed;
       top: 20px;
       left: 20px;
+      right: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 50;
+      pointer-events: none;
+    }
+    .top-controls > * {
+      pointer-events: auto;
+    }
+
+    /* 3-Dash Settings Icon */
+    .toggle-panel-btn {
       width: 44px;
       height: 44px;
       background: rgba(255, 255, 255, 0.25);
-      color: #333333;
+      color: var(--text-main);
       border: 1px solid rgba(255, 255, 255, 0.4);
-      border-radius: 10px;
+      border-radius: 12px;
       font-size: 24px;
-      line-height: 1;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
       box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-      z-index: 50;
-      transition: all 0.25s ease;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      transition: all 0.3s ease;
     }
     .toggle-panel-btn:hover {
       background: rgba(255, 255, 255, 0.45);
-      border-color: rgba(255, 255, 255, 0.7);
       transform: scale(1.05);
-      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+    }
+    body.presenter-mode .toggle-panel-btn {
+      display: none !important; /* Hide setup menu in presenter mode */
     }
 
-    /* Main Container for Draw Area */
+    /* Presenter Mode Toggle Button */
+    .presenter-btn {
+      background: rgba(255, 255, 255, 0.2);
+      color: var(--text-main);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      padding: 10px 18px;
+      border-radius: 30px;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      margin-left: auto;
+    }
+    .presenter-btn:hover {
+      background: rgba(255, 255, 255, 0.35);
+      transform: translateY(-2px);
+    }
+    body.presenter-mode .presenter-btn {
+      background: linear-gradient(135deg, rgba(168, 85, 247, 0.4), rgba(236, 72, 153, 0.4));
+      border-color: rgba(236, 72, 153, 0.6);
+      color: #ffffff;
+      box-shadow: 0 0 20px rgba(168, 85, 247, 0.4);
+    }
+
+    /* MAIN CONTAINER FOR DRAW AREA */
     .main-container {
       width: 100%;
-      max-width: 500px;
+      max-width: 650px;
       padding: 20px;
       text-align: center;
+      z-index: 10;
+      transition: all 0.5s ease;
     }
 
     .card {
       background: var(--card-bg-color);
-      padding: 35px 30px;
-      border-radius: 16px;
-      box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+      padding: 40px 35px;
+      border-radius: 24px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.15);
       position: relative;
-      transition: background-color 0.3s ease;
+      transition: all 0.5s ease;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
     }
 
-    /* Side Panel / Drawer Styles */
+    body.presenter-mode .card {
+      padding: 60px 45px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6), 0 0 40px rgba(168, 85, 247, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      animation: floatCard 6s ease-in-out infinite;
+    }
+
+    @keyframes floatCard {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+
+    #appTitle {
+      margin-top: 0;
+      margin-bottom: 10px;
+      color: var(--text-main);
+      transition: all 0.5s ease;
+      font-size: 2.2rem;
+    }
+
+    body.presenter-mode #appTitle {
+      font-size: 3.2rem;
+      font-weight: 900;
+      letter-spacing: 1px;
+      background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 50%, #a855f7 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+
+    /* DISPLAY BOX & WINNER DRAW ANIMATIONS */
+    .display-box {
+      margin-top: 25px;
+      padding: 35px 20px;
+      border: 2px dashed var(--display-border-color);
+      border-radius: 16px;
+      min-height: 120px;
+      font-size: 36px;
+      font-weight: bold;
+      color: var(--display-text-color);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: var(--display-bg-color);
+      transition: all 0.3s ease;
+      word-break: break-word;
+      position: relative;
+      overflow: hidden;
+    }
+
+    body.presenter-mode .display-box {
+      min-height: 160px;
+      font-size: 48px;
+      border-width: 3px;
+      border-style: solid;
+      box-shadow: inset 0 0 20px rgba(0,0,0,0.5), 0 0 25px rgba(168, 85, 247, 0.2);
+    }
+
+    .count-text {
+      font-size: 15px;
+      color: #6c757d;
+      margin-top: 10px;
+      transition: color 0.5s ease;
+    }
+    body.presenter-mode .count-text {
+      color: #94a3b8;
+      font-size: 18px;
+    }
+
+    /* BUTTON STYLING */
+    .primary-btn {
+      margin-top: 25px;
+      padding: 16px 32px;
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--btn-text-color);
+      background: var(--btn-color);
+      border: none;
+      border-radius: 14px;
+      cursor: pointer;
+      width: 100%;
+      transition: all 0.3s ease;
+      box-shadow: 0 6px 20px rgba(0, 123, 255, 0.3);
+    }
+    .primary-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(0, 123, 255, 0.4);
+    }
+    .primary-btn:disabled { 
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    body.presenter-mode .primary-btn {
+      font-size: 24px;
+      padding: 20px 40px;
+      border-radius: 50px;
+      background-size: 200% 200%;
+      animation: gradientShift 4s ease infinite;
+      box-shadow: 0 10px 30px rgba(168, 85, 247, 0.4);
+    }
+
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    /* SIDE PANEL / DRAWER STYLES */
     .side-panel {
       position: fixed;
       top: 0;
-      left: -400px; /* Hidden by default */
+      left: -400px;
       width: 380px;
       max-width: 85vw;
       height: 100vh;
@@ -109,17 +296,17 @@
     }
 
     .side-panel.open {
-      left: 0; /* Expanded */
+      left: 0;
     }
 
-    /* Overlay backdrop when side panel is open */
     .backdrop {
       position: fixed;
       top: 0;
       left: 0;
       width: 100vw;
       height: 100vh;
-      background: rgba(0,0,0,0.3);
+      background: rgba(0,0,0,0.4);
+      backdrop-filter: blur(3px);
       display: none;
       z-index: 90;
     }
@@ -145,7 +332,6 @@
       color: #6c757d;
     }
 
-    /* Side Panel Navigation Tabs */
     .panel-tabs {
       display: flex;
       gap: 8px;
@@ -178,7 +364,6 @@
       display: flex;
     }
 
-    /* Controls & Inputs */
     textarea {
       width: 100%;
       flex-grow: 1;
@@ -190,21 +375,6 @@
       resize: vertical;
       font-family: monospace;
     }
-
-    .primary-btn {
-      margin-top: 20px;
-      padding: 14px 24px;
-      font-size: 18px;
-      font-weight: bold;
-      color: var(--btn-text-color);
-      background-color: var(--btn-color);
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      width: 100%;
-      transition: background-color 0.2s ease;
-    }
-    .primary-btn:disabled { background-color: #aaa; }
 
     .import-group {
       display: flex;
@@ -226,28 +396,6 @@
       background-color: #e2e6ea;
     }
 
-    .display-box {
-      margin-top: 20px;
-      padding: 25px;
-      border: 2px dashed var(--display-border-color);
-      border-radius: 12px;
-      min-height: 80px;
-      font-size: 28px;
-      font-weight: bold;
-      color: var(--display-text-color);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background-color: var(--display-bg-color);
-      transition: all 0.3s ease;
-      word-break: break-word;
-    }
-    .count-text {
-      font-size: 14px;
-      color: #6c757d;
-      margin-top: 10px;
-    }
-
     .option-box {
       margin-top: 15px;
       padding-top: 10px;
@@ -258,17 +406,7 @@
       align-items: center;
       gap: 8px;
     }
-    .option-box input {
-      cursor: pointer;
-    }
-    .hint-text {
-      font-size: 12px;
-      color: #6c757d;
-      margin-bottom: 10px;
-      text-align: left;
-    }
 
-    /* Appearance Settings Controls */
     .setting-item {
       display: flex;
       justify-content: space-between;
@@ -320,8 +458,8 @@
       left: 0;
       width: 100vw;
       height: 100vh;
-      background: rgba(0, 0, 0, 0.75);
-      backdrop-filter: blur(4px);
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(8px);
       display: none;
       justify-content: center;
       align-items: center;
@@ -335,48 +473,59 @@
 
     .winner-card {
       background: #ffffff;
-      padding: 30px 20px;
-      border-radius: 20px;
+      padding: 40px 30px;
+      border-radius: 24px;
       text-align: center;
       width: 100%;
-      max-width: 480px;
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+      max-width: 520px;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5);
       animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     }
 
-    /* Optimized responsive title font sizing */
+    body.presenter-mode .winner-card {
+      background: #1e293b;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #f8fafc;
+    }
+
     .winner-title {
-      font-size: clamp(22px, 4vw, 36px);
+      font-size: clamp(24px, 5vw, 40px);
       font-weight: 900;
-      letter-spacing: 0.5px;
+      letter-spacing: 1px;
       text-transform: uppercase;
-      background: linear-gradient(45deg, #ff4e50, #f9d423, #28a745, #007bff);
+      background: linear-gradient(45deg, #ff4e50, #f9d423, #28a745, #007bff, #a855f7);
       background-size: 300% 300%;
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       animation: gradientGlow 4s ease infinite;
-      margin: 0 0 15px 0;
+      margin: 0 0 20px 0;
       line-height: 1.2;
       word-break: break-word;
     }
 
     .winner-name {
-      font-size: clamp(24px, 7vw, 40px);
+      font-size: clamp(28px, 8vw, 48px);
       font-weight: 800;
       color: #1a1a1a;
-      margin: 10px 0 20px 0;
-      padding: 15px 10px;
+      margin: 15px 0 25px 0;
+      padding: 20px 15px;
       background: #f4f6f8;
-      border-radius: 14px;
+      border-radius: 16px;
       border: 3px dashed #28a745;
       box-shadow: inset 0 2px 5px rgba(0,0,0,0.05);
       word-break: break-word;
       line-height: 1.2;
     }
 
+    body.presenter-mode .winner-name {
+      background: #0f172a;
+      color: #f8fafc;
+      border-color: #a855f7;
+    }
+
     .modal-btn-group {
       display: flex;
-      gap: 10px;
+      gap: 12px;
       margin-top: 10px;
     }
 
@@ -392,17 +541,29 @@
     }
 
     @keyframes popIn {
-      from { transform: scale(0.6); opacity: 0; }
+      from { transform: scale(0.7); opacity: 0; }
       to { transform: scale(1); opacity: 1; }
     }
   </style>
 </head>
 <body>
 
-  <!-- TRANSPARENT WHITE 3-DASH MENU BUTTON -->
-  <button class="toggle-panel-btn" onclick="openPanel()" title="Settings">
-    &#9776;
-  </button>
+  <!-- BACKGROUND FLOATING PARTICLES (PRESENTER MODE) -->
+  <canvas id="particleCanvas"></canvas>
+
+  <!-- TOP ACTION CONTROLS -->
+  <div class="top-controls">
+    <!-- Transparent White Settings Button -->
+    <button class="toggle-panel-btn" onclick="openPanel()" title="Settings">
+      &#9776;
+    </button>
+
+    <!-- Presenter Mode Toggle Button -->
+    <button class="presenter-btn" onclick="togglePresenterMode()" title="Toggle Event View (Key: F)">
+      <span id="presenterIcon">📺</span>
+      <span id="presenterText">Presenter Mode</span>
+    </button>
+  </div>
 
   <!-- Background Overlay for Side Panel -->
   <div id="backdrop" class="backdrop" onclick="closePanel()"></div>
@@ -422,15 +583,15 @@
 
     <!-- TAB 1: PARTICIPANTS -->
     <div id="participantsTab" class="tab-view active">
-      <div class="hint-text">Format: <code>Name - Entries</code> (e.g. <code>AAA - 5</code>)</div>
+      <div class="hint-text" style="font-size: 12px; color: #6c757d; margin-bottom: 8px;">Format: <code>Name - Entries</code> (e.g. <code>AAA - 5</code>)</div>
       <textarea id="participantsInput" placeholder="AAA - 5&#10;BBB - 1&#10;Charlie - 3" oninput="saveParticipants()"></textarea>
       
-      <!-- Hidden File Input supporting Excel & Text -->
+      <!-- Hidden File Input -->
       <input type="file" id="fileImporter" accept=".xlsx,.xls,.csv,.txt" style="display: none;" onchange="handleFileImport(event)">
 
       <!-- Import & Clear Buttons -->
       <div class="import-group">
-        <button class="secondary-btn" onclick="document.getElementById('fileImporter').click()">📊 Import Excel/TXT</button>
+        <button class="secondary-btn" onclick="document.getElementById('fileImporter').click()">📊 Import File</button>
         <button class="secondary-btn" onclick="clearAllParticipants()">🗑️ Clear All</button>
       </div>
 
@@ -501,7 +662,7 @@
   <!-- MAIN LUCKY DRAW SCREEN -->
   <div class="main-container">
     <div class="card">
-      <h1 id="appTitle" style="margin-top: 10px; margin-bottom: 5px;">🎉 Lucky Draw</h1>
+      <h1 id="appTitle">🎉 Lucky Draw</h1>
       <div id="participantCount" class="count-text">0 unique participants (0 total entries)</div>
 
       <div id="display" class="display-box">Ready!</div>
@@ -545,7 +706,107 @@
 
       // Load Appearance Settings
       loadAppearance();
+
+      // Initialize Ambient Particles
+      initParticles();
     };
+
+    // PRESENTER MODE TOGGLE
+    function togglePresenterMode() {
+      const isPresenter = document.body.classList.toggle('presenter-mode');
+      const btnText = document.getElementById('presenterText');
+      const btnIcon = document.getElementById('presenterIcon');
+
+      if (isPresenter) {
+        btnText.innerText = "Exit Presenter";
+        btnIcon.innerText = "✕";
+        closePanel();
+
+        // Trigger native Fullscreen if supported
+        if (document.documentElement.requestFullscreen) {
+          document.documentElement.requestFullscreen().catch(() => {});
+        }
+      } else {
+        btnText.innerText = "Presenter Mode";
+        btnIcon.innerText = "📺";
+
+        if (document.exitFullscreen && document.fullscreenElement) {
+          document.exitFullscreen().catch(() => {});
+        }
+      }
+    }
+
+    // Keyboard Shortcuts for Presenter Mode
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'f' || e.key === 'F') {
+        // Prevent toggle if actively typing in text fields
+        if (['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
+        togglePresenterMode();
+      }
+    });
+
+    // AMBIENT BACKGROUND PARTICLES
+    function initParticles() {
+      const canvas = document.getElementById('particleCanvas');
+      const ctx = canvas.getContext('2d');
+      let particles = [];
+
+      function resize() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+      }
+      window.addEventListener('resize', resize);
+      resize();
+
+      class Particle {
+        constructor() {
+          this.reset();
+        }
+        reset() {
+          this.x = Math.random() * canvas.width;
+          this.y = Math.random() * canvas.height;
+          this.size = Math.random() * 3 + 1;
+          this.speedX = (Math.random() - 0.5) * 0.8;
+          this.speedY = (Math.random() - 0.5) * 0.8;
+          this.alpha = Math.random() * 0.5 + 0.2;
+          this.color = ['#a855f7', '#ec4899', '#6366f1', '#3b82f6'][Math.floor(Math.random() * 4)];
+        }
+        update() {
+          this.x += this.speedX;
+          this.y += this.speedY;
+
+          if (this.x < 0 || this.x > canvas.width) this.speedX *= -1;
+          if (this.y < 0 || this.y > canvas.height) this.speedY *= -1;
+        }
+        draw() {
+          ctx.save();
+          ctx.globalAlpha = this.alpha;
+          ctx.fillStyle = this.color;
+          ctx.shadowBlur = 10;
+          ctx.shadowColor = this.color;
+          ctx.beginPath();
+          ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+      }
+
+      for (let i = 0; i < 50; i++) {
+        particles.push(new Particle());
+      }
+
+      function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        if (document.body.classList.contains('presenter-mode')) {
+          particles.forEach(p => {
+            p.update();
+            p.draw();
+          });
+        }
+        requestAnimationFrame(animate);
+      }
+      animate();
+    }
 
     // Panel Navigation Functions
     function openPanel() {
@@ -698,7 +959,6 @@
         `${parsedList.length} unique participants (${pool.length} total entries) ready`;
     }
 
-    // Import File Handler (Excel Column A = Name, Column B = Entries)
     function handleFileImport(event) {
       const file = event.target.files[0];
       if (!file) return;
@@ -770,12 +1030,12 @@
       document.getElementById('modalWinnerName').innerText = winnerName;
       document.getElementById('winnerModal').classList.add('active');
       
-      // Fire Confetti Celebration
       if (typeof confetti === 'function') {
         confetti({
-          particleCount: 120,
-          spread: 80,
-          origin: { y: 0.6 }
+          particleCount: 150,
+          spread: 100,
+          origin: { y: 0.6 },
+          colors: ['#a855f7', '#ec4899', '#3b82f6', '#22c55e', '#eab308']
         });
       }
     }
@@ -792,15 +1052,15 @@
       const removeCheck = document.getElementById('removeWinnerCheck');
 
       if (pool.length === 0) {
-        alert('No entries left! Click the settings menu on the top left to add participants.');
+        alert('No entries left! Add participants in Settings.');
         return;
       }
 
       btn.disabled = true;
       btn.innerText = "Drawing...";
       let counter = 0;
-      const speed = 80;
-      const totalCycles = 30;
+      const speed = 70;
+      const totalCycles = 35;
 
       const interval = setInterval(() => {
         const randomIndex = Math.floor(Math.random() * pool.length);
