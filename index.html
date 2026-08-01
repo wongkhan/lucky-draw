@@ -43,30 +43,34 @@
       position: relative;
     }
 
-    /* Fixed Settings Button at Top-Left of Webpage */
+    /* Transparent White 3-Dash Settings Icon at Webpage Upper Left */
     .toggle-panel-btn {
       position: fixed;
       top: 20px;
       left: 20px;
-      background: #ffffff;
+      width: 44px;
+      height: 44px;
+      background: rgba(255, 255, 255, 0.25);
       color: #333333;
-      border: 1px solid #ced4da;
-      border-radius: 8px;
-      padding: 10px 16px;
-      font-size: 14px;
-      font-weight: bold;
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      border-radius: 10px;
+      font-size: 24px;
+      line-height: 1;
       cursor: pointer;
       display: flex;
       align-items: center;
-      gap: 8px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      justify-content: center;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
       z-index: 50;
-      transition: all 0.2s ease;
+      transition: all 0.25s ease;
     }
     .toggle-panel-btn:hover {
-      background: #f8f9fa;
-      transform: translateY(-2px);
-      box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+      background: rgba(255, 255, 255, 0.45);
+      border-color: rgba(255, 255, 255, 0.7);
+      transform: scale(1.05);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
     }
 
     /* Main Container for Draw Area */
@@ -374,9 +378,9 @@
 </head>
 <body>
 
-  <!-- FIXED SETTINGS BUTTON AT WEBPAGE UPPER LEFT -->
-  <button class="toggle-panel-btn" onclick="openPanel()">
-    ⚙️ Settings
+  <!-- TRANSPARENT WHITE 3-DASH MENU BUTTON -->
+  <button class="toggle-panel-btn" onclick="openPanel()" title="Settings">
+    &#9776;
   </button>
 
   <!-- Background Overlay for Side Panel -->
@@ -768,7 +772,7 @@
       const removeCheck = document.getElementById('removeWinnerCheck');
 
       if (pool.length === 0) {
-        alert('No entries left! Click "⚙️ Settings" on the top left to add participants.');
+        alert('No entries left! Click the settings menu on the top left to add participants.');
         return;
       }
 
