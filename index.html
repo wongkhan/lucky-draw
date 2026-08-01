@@ -9,6 +9,9 @@
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
   <style>
+    * {
+      box-sizing: border-box;
+    }
     body {
       font-family: Arial, sans-serif;
       background-color: #f4f6f8;
@@ -17,81 +20,129 @@
       align-items: center;
       min-height: 100vh;
       margin: 0;
+      overflow-x: hidden;
     }
-    .card {
-      background: #ffffff;
-      padding: 30px;
-      border-radius: 12px;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+
+    /* Main Container for Draw Area */
+    .main-container {
       width: 100%;
-      max-width: 480px;
+      max-width: 500px;
+      padding: 20px;
       text-align: center;
     }
 
-    /* Navigation Tabs */
-    .tab-buttons {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 20px;
-    }
-    .tab-btn {
-      flex: 1;
-      padding: 10px;
-      font-size: 14px;
-      font-weight: bold;
-      background-color: #e9ecef;
-      color: #495057;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-    .tab-btn.active {
-      background-color: #007bff;
-      color: #ffffff;
+    .card {
+      background: #ffffff;
+      padding: 35px 30px;
+      border-radius: 16px;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+      position: relative;
     }
 
-    /* Tab Content Views */
-    .tab-content {
-      display: none;
+    /* Side Panel / Drawer Styles */
+    .side-panel {
+      position: fixed;
+      top: 0;
+      left: -380px; /* Hidden by default */
+      width: 380px;
+      height: 100vh;
+      background: #ffffff;
+      box-shadow: 4px 0 20px rgba(0,0,0,0.15);
+      transition: left 0.3s ease-in-out;
+      z-index: 100;
+      padding: 25px;
+      display: flex;
+      flex-direction: column;
     }
-    .tab-content.active {
+
+    .side-panel.open {
+      left: 0; /* Expanded */
+    }
+
+    /* Overlay backdrop when side panel is open */
+    .backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0,0,0,0.3);
+      display: none;
+      z-index: 90;
+    }
+    .backdrop.active {
       display: block;
     }
 
-    /* Controls */
+    /* Side Panel Toggle Button */
+    .toggle-panel-btn {
+      position: absolute;
+      top: 15px;
+      left: 15px;
+      background: #f8f9fa;
+      border: 1px solid #ced4da;
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 13px;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .toggle-panel-btn:hover {
+      background: #e2e6ea;
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+    .panel-header h2 {
+      margin: 0;
+      font-size: 20px;
+    }
+    .close-btn {
+      background: none;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      color: #6c757d;
+    }
+
+    /* Controls & Buttons */
     textarea {
       width: 100%;
-      height: 150px;
-      padding: 10px;
+      flex-grow: 1;
+      height: 220px;
+      padding: 12px;
       border: 1px solid #ccc;
-      border-radius: 6px;
-      box-sizing: border-box;
+      border-radius: 8px;
       font-size: 14px;
       resize: vertical;
       font-family: monospace;
     }
+
     .primary-btn {
       margin-top: 15px;
-      padding: 12px 24px;
-      font-size: 16px;
+      padding: 14px 24px;
+      font-size: 18px;
       font-weight: bold;
       color: #fff;
-      background-color: #28a745;
+      background-color: #007bff;
       border: none;
-      border-radius: 6px;
+      border-radius: 8px;
       cursor: pointer;
       width: 100%;
     }
-    .draw-btn {
-      background-color: #007bff;
-    }
     .primary-btn:disabled { background-color: #aaa; }
 
-    /* Import/Export Action buttons */
     .import-group {
       display: flex;
       gap: 10px;
-      margin-top: 10px;
+      margin-top: 12px;
     }
     .secondary-btn {
       flex: 1;
@@ -101,7 +152,7 @@
       color: #333;
       background-color: #f8f9fa;
       border: 1px solid #ced4da;
-      border-radius: 6px;
+      border-radius: 8px;
       cursor: pointer;
     }
     .secondary-btn:hover {
@@ -109,26 +160,27 @@
     }
 
     .display-box {
-      margin-top: 15px;
-      padding: 20px;
+      margin-top: 20px;
+      padding: 25px;
       border: 2px dashed #007bff;
-      border-radius: 8px;
-      min-height: 50px;
-      font-size: 24px;
+      border-radius: 12px;
+      min-height: 80px;
+      font-size: 28px;
       font-weight: bold;
       color: #333;
       display: flex;
       align-items: center;
       justify-content: center;
+      background-color: #fafafa;
     }
     .count-text {
-      font-size: 13px;
+      font-size: 14px;
       color: #6c757d;
-      margin-top: 8px;
+      margin-top: 10px;
     }
 
     .option-box {
-      margin-top: 15px;
+      margin-top: 20px;
       font-size: 14px;
       color: #333;
       display: flex;
@@ -142,42 +194,50 @@
     .hint-text {
       font-size: 12px;
       color: #6c757d;
-      margin-bottom: 8px;
+      margin-bottom: 10px;
       text-align: left;
     }
   </style>
 </head>
 <body>
 
-  <div class="card">
-    <!-- Tab Navigation Bar -->
-    <div class="tab-buttons">
-      <button class="tab-btn active" onclick="switchTab('participantsTab', event)">📝 Participants</button>
-      <button class="tab-btn" onclick="switchTab('drawTab', event)">🎉 Lucky Draw</button>
+  <!-- Background Overlay for Side Panel -->
+  <div id="backdrop" class="backdrop" onclick="closePanel()"></div>
+
+  <!-- COLLAPSIBLE SIDE PANEL -->
+  <div id="sidePanel" class="side-panel">
+    <div class="panel-header">
+      <h2>📝 Participants</h2>
+      <button class="close-btn" onclick="closePanel()">&times;</button>
+    </div>
+    
+    <div class="hint-text">Format: <code>Name - Entries</code> (e.g. <code>AAA - 5</code>)</div>
+    <textarea id="participantsInput" placeholder="AAA - 5&#10;BBB - 1&#10;Charlie - 3" oninput="saveParticipants()"></textarea>
+    
+    <!-- Hidden File Input supporting Excel & Text -->
+    <input type="file" id="fileImporter" accept=".xlsx,.xls,.csv,.txt" style="display: none;" onchange="handleFileImport(event)">
+
+    <!-- Import & Clear Buttons -->
+    <div class="import-group">
+      <button class="secondary-btn" onclick="document.getElementById('fileImporter').click()">📊 Import Excel/TXT</button>
+      <button class="secondary-btn" onclick="clearAllParticipants()">🗑️ Clear All</button>
     </div>
 
-    <!-- TAB 1: Manage Participants -->
-    <div id="participantsTab" class="tab-content active">
-      <h2>Participants List</h2>
-      <div class="hint-text">Format: <code>Name - Entries</code> (e.g. <code>AAA - 5</code> or <code>BBB - 1</code>)</div>
-      <textarea id="participantsInput" placeholder="AAA - 5&#10;BBB - 1&#10;Charlie - 3" oninput="saveParticipants()"></textarea>
+    <div id="saveMsg" class="count-text" style="text-align: center;">Saved to browser memory!</div>
+  </div>
+
+  <!-- MAIN LUCKY DRAW SCREEN -->
+  <div class="main-container">
+    <div class="card">
       
-      <!-- Hidden File Input supporting Excel & Text -->
-      <input type="file" id="fileImporter" accept=".xlsx,.xls,.csv,.txt" style="display: none;" onchange="handleFileImport(event)">
+      <!-- Panel Expand Trigger -->
+      <button class="toggle-panel-btn" onclick="openPanel()">
+        ⚙️ Manage List
+      </button>
 
-      <!-- Import & Clear Buttons -->
-      <div class="import-group">
-        <button class="secondary-btn" onclick="document.getElementById('fileImporter').click()">📊 Import Excel / TXT</button>
-        <button class="secondary-btn" onclick="clearAllParticipants()">🗑️ Clear All</button>
-      </div>
+      <h1 style="margin-top: 30px; margin-bottom: 5px;">🎉 Lucky Draw</h1>
+      <div id="participantCount" class="count-text">0 unique participants (0 total entries)</div>
 
-      <div id="saveMsg" class="count-text">Saved to browser memory!</div>
-    </div>
-
-    <!-- TAB 2: Lucky Draw Menu -->
-    <div id="drawTab" class="tab-content">
-      <h2>🎉 Lucky Draw</h2>
-      <div id="participantCount" class="count-text">0 participants (0 total entries) ready</div>
       <div id="display" class="display-box">Ready!</div>
 
       <div class="option-box">
@@ -185,7 +245,7 @@
         <label for="removeWinnerCheck">Remove winner from participant list</label>
       </div>
 
-      <button id="drawBtn" class="primary-btn draw-btn" onclick="pickWinner()">Pick Winner</button>
+      <button id="drawBtn" class="primary-btn" onclick="pickWinner()">Pick Winner</button>
     </div>
   </div>
 
@@ -198,16 +258,15 @@
       updateParticipantCount();
     };
 
-    function switchTab(tabId, evt) {
-      document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
-      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    // Panel Expand/Collapse Functions
+    function openPanel() {
+      document.getElementById('sidePanel').classList.add('open');
+      document.getElementById('backdrop').classList.add('active');
+    }
 
-      document.getElementById(tabId).classList.add('active');
-      evt.currentTarget.classList.add('active');
-
-      if (tabId === 'drawTab') {
-        updateParticipantCount();
-      }
+    function closePanel() {
+      document.getElementById('sidePanel').classList.remove('open');
+      document.getElementById('backdrop').classList.remove('active');
     }
 
     function saveParticipants() {
@@ -216,7 +275,7 @@
       updateParticipantCount();
     }
 
-    // Parses raw lines into structured objects [{name: 'AAA', count: 5}, ...]
+    // Parses raw lines into structured objects
     function getParsedParticipants() {
       const text = document.getElementById('participantsInput').value;
       const lines = text.split('\n');
@@ -229,7 +288,6 @@
         let name = trimmed;
         let count = 1;
 
-        // Matches formats like "AAA - 5", "AAA, 5", "AAA 5", or "AAA: 5"
         const match = trimmed.match(/^(.*?)(?:\s*[-,:]\s*|\s+)(\d+)$/);
         if (match) {
           name = match[1].trim();
@@ -244,7 +302,6 @@
       return list;
     }
 
-    // Creates flat pool where names with 5 entries appear 5 times
     function buildWeightedPool(parsedList) {
       const pool = [];
       parsedList.forEach(item => {
@@ -259,7 +316,7 @@
       const parsedList = getParsedParticipants();
       const pool = buildWeightedPool(parsedList);
       document.getElementById('participantCount').innerText = 
-        `${parsedList.length} unique participant(s) (${pool.length} total entries) ready`;
+        `${parsedList.length} unique participants (${pool.length} total entries) ready`;
     }
 
     // Import File Handler (Excel Column A = Name, Column B = Entries)
@@ -337,7 +394,7 @@
       const removeCheck = document.getElementById('removeWinnerCheck');
 
       if (pool.length === 0) {
-        alert('No entries left! Switch to the Participants tab to add more names.');
+        alert('No entries left! Click "⚙️ Manage List" on the top left to add participants.');
         return;
       }
 
@@ -347,7 +404,6 @@
       const speed = 80;
       const totalCycles = 30;
 
-      // Shuffle visual display
       const interval = setInterval(() => {
         const randomIndex = Math.floor(Math.random() * pool.length);
         display.innerText = pool[randomIndex];
@@ -356,13 +412,11 @@
         if (counter >= totalCycles) {
           clearInterval(interval);
           
-          // Select final winner from weighted pool
           const winnerIndex = Math.floor(Math.random() * pool.length);
           const finalWinner = pool[winnerIndex];
           
           display.innerText = `🏆 ${finalWinner}!`;
 
-          // If checkbox is checked, remove the winner entirely from the input list
           if (removeCheck.checked) {
             const updatedList = parsedList.filter(item => item.name !== finalWinner);
             const newText = updatedList.map(item => `${item.name} - ${item.count}`).join('\n');
