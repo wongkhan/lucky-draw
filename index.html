@@ -4,6 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Lucky Draw</title>
+  
+  <!-- SheetJS Library for Excel File Processing -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -82,8 +86,8 @@
     }
     .primary-btn:disabled { background-color: #aaa; }
 
-    /* Export buttons */
-    .export-group {
+    /* Import/Export Action buttons */
+    .import-group {
       display: flex;
       gap: 10px;
       margin-top: 10px;
@@ -151,10 +155,13 @@
       <p>Enter names (one per line):</p>
       <textarea id="participantsInput" placeholder="Alice&#10;Bob&#10;Charlie&#10;Diana" oninput="saveParticipants()"></textarea>
       
-      <!-- Export Options -->
-      <div class="export-group">
-        <button class="secondary-btn" onclick="exportToFile()">📥 Download TXT</button>
-        <button class="secondary-btn" onclick="copyToClipboard()">📋 Copy List</button>
+      <!-- Hidden File Input supporting Excel & Text -->
+      <input type="file" id="fileImporter" accept=".xlsx,.xls,.csv,.txt" style="display: none;" onchange="handleFileImport(event)">
+
+      <!-- Import & Clear Buttons -->
+      <div class="import-group">
+        <button class="secondary-btn" onclick="document.getElementById('fileImporter').click()">📊 Import Excel / TXT</button>
+        <button class="secondary-btn" onclick="clearAllParticipants()">🗑️ Clear All</button>
       </div>
 
       <div id="saveMsg" class="count-text">Saved to browser memory!</div>
@@ -212,32 +219,78 @@
       document.getElementById('participantCount').innerText = `${names.length} participant(s) ready`;
     }
 
-    // Export Function 1: Download TXT file
-    function exportToFile() {
-      const text = document.getElementById('participantsInput').value.trim();
-      if (!text) {
-        alert('Participant list is empty!');
-        return;
+    // Import File Handler for Excel (.xlsx, .xls), CSV, and TXT
+    function handleFileImport(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const fileName = file.name.toLowerCase();
+      
+      // Handle Excel files (.xlsx, .xls)
+      if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const data = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(data, { type: 'array' });
+          
+          // Get first sheet
+          const firstSheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[firstSheetName];
+          
+          // Convert sheet to JSON rows
+          const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+          
+          // Flatten first column values into a list of names
+          const extractedNames = rows
+            .map(row => row[0])
+            .filter(name => name !== undefined && name !== null && String(name).trim() !== '')
+            .map(name => String(name).trim());
+
+          applyImportedNames(extractedNames.join('\n'));
+        };
+        reader.readAsArrayBuffer(file);
+      } 
+      // Handle Plain Text & CSV files (.txt, .csv)
+      else {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          applyImportedNames(e.target.result.trim());
+        };
+        reader.readAsText(file);
       }
-      const blob = new Blob([text], { type: 'text/plain' });
-      const anchor = document.createElement('a');
-      anchor.download = 'participants.txt';
-      anchor.href = window.URL.createObjectURL(blob);
-      anchor.click();
+
+      // Reset file input so user can import the same file again if needed
+      event.target.value = '';
     }
 
-    // Export Function 2: Copy to Clipboard
-    function copyToClipboard() {
-      const text = document.getElementById('participantsInput').value.trim();
-      if (!text) {
-        alert('Participant list is empty!');
-        return;
+    // Process & apply new names into the input box
+    function applyImportedNames(newText) {
+      const currentInput = document.getElementById('participantsInput');
+      
+      if (currentInput.value.trim().length > 0) {
+        const append = confirm("Click OK to ADD to your existing list, or Cancel to OVERWRITE your list.");
+        if (append) {
+          currentInput.value = currentInput.value.trim() + '\n' + newText;
+        } else {
+          currentInput.value = newText;
+        }
+      } else {
+        currentInput.value = newText;
       }
-      navigator.clipboard.writeText(text).then(() => {
-        const msg = document.getElementById('saveMsg');
-        msg.innerText = '📋 Copied list to clipboard!';
-        setTimeout(() => { msg.innerText = 'Saved to browser memory!'; }, 2000);
-      });
+
+      saveParticipants();
+      
+      const msg = document.getElementById('saveMsg');
+      msg.innerText = '✅ File imported successfully!';
+      setTimeout(() => { msg.innerText = 'Saved to browser memory!'; }, 2000);
+    }
+
+    // Clear list function
+    function clearAllParticipants() {
+      if (confirm("Are you sure you want to clear all names?")) {
+        document.getElementById('participantsInput').value = '';
+        saveParticipants();
+      }
     }
 
     function pickWinner() {
