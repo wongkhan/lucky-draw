@@ -1,4 +1,3 @@
-Lucky Draw
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -83,6 +82,27 @@ Lucky Draw
     }
     .primary-btn:disabled { background-color: #aaa; }
 
+    /* Export buttons */
+    .export-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .secondary-btn {
+      flex: 1;
+      padding: 10px;
+      font-size: 13px;
+      font-weight: bold;
+      color: #333;
+      background-color: #f8f9fa;
+      border: 1px solid #ced4da;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .secondary-btn:hover {
+      background-color: #e2e6ea;
+    }
+
     .display-box {
       margin-top: 15px;
       padding: 20px;
@@ -102,7 +122,6 @@ Lucky Draw
       margin-top: 8px;
     }
 
-    /* Checkbox option style */
     .option-box {
       margin-top: 15px;
       font-size: 14px;
@@ -131,6 +150,13 @@ Lucky Draw
       <h2>Participants List</h2>
       <p>Enter names (one per line):</p>
       <textarea id="participantsInput" placeholder="Alice&#10;Bob&#10;Charlie&#10;Diana" oninput="saveParticipants()"></textarea>
+      
+      <!-- Export Options -->
+      <div class="export-group">
+        <button class="secondary-btn" onclick="exportToFile()">📥 Download TXT</button>
+        <button class="secondary-btn" onclick="copyToClipboard()">📋 Copy List</button>
+      </div>
+
       <div id="saveMsg" class="count-text">Saved to browser memory!</div>
     </div>
 
@@ -140,7 +166,6 @@ Lucky Draw
       <div id="participantCount" class="count-text">0 participants ready</div>
       <div id="display" class="display-box">Ready!</div>
 
-      <!-- Toggle option to delete winner -->
       <div class="option-box">
         <input type="checkbox" id="removeWinnerCheck" checked>
         <label for="removeWinnerCheck">Remove winner from participant list</label>
@@ -151,7 +176,6 @@ Lucky Draw
   </div>
 
   <script>
-    // Load saved participants on page load
     window.onload = function() {
       const savedNames = localStorage.getItem('drawParticipants');
       if (savedNames) {
@@ -160,7 +184,6 @@ Lucky Draw
       updateParticipantCount();
     };
 
-    // Tab switching handler
     function switchTab(tabId, evt) {
       document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
       document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
@@ -173,14 +196,12 @@ Lucky Draw
       }
     }
 
-    // Save list automatically on typing
     function saveParticipants() {
       const text = document.getElementById('participantsInput').value;
       localStorage.setItem('drawParticipants', text);
       updateParticipantCount();
     }
 
-    // Helper to get array of valid names
     function getNamesArray() {
       const text = document.getElementById('participantsInput').value;
       return text.split('\n').map(n => n.trim()).filter(n => n !== '');
@@ -191,7 +212,34 @@ Lucky Draw
       document.getElementById('participantCount').innerText = `${names.length} participant(s) ready`;
     }
 
-    // Pick Winner function
+    // Export Function 1: Download TXT file
+    function exportToFile() {
+      const text = document.getElementById('participantsInput').value.trim();
+      if (!text) {
+        alert('Participant list is empty!');
+        return;
+      }
+      const blob = new Blob([text], { type: 'text/plain' });
+      const anchor = document.createElement('a');
+      anchor.download = 'participants.txt';
+      anchor.href = window.URL.createObjectURL(blob);
+      anchor.click();
+    }
+
+    // Export Function 2: Copy to Clipboard
+    function copyToClipboard() {
+      const text = document.getElementById('participantsInput').value.trim();
+      if (!text) {
+        alert('Participant list is empty!');
+        return;
+      }
+      navigator.clipboard.writeText(text).then(() => {
+        const msg = document.getElementById('saveMsg');
+        msg.innerText = '📋 Copied list to clipboard!';
+        setTimeout(() => { msg.innerText = 'Saved to browser memory!'; }, 2000);
+      });
+    }
+
     function pickWinner() {
       const names = getNamesArray();
       const display = document.getElementById('display');
@@ -217,13 +265,11 @@ Lucky Draw
         if (counter >= totalCycles) {
           clearInterval(interval);
           
-          // Select final winner
           const winnerIndex = Math.floor(Math.random() * names.length);
           const finalWinner = names[winnerIndex];
           
           display.innerText = `🏆 ${finalWinner}!`;
 
-          // If checkbox is checked, remove the winner from the list
           if (removeCheck.checked) {
             names.splice(winnerIndex, 1);
             document.getElementById('participantsInput').value = names.join('\n');
