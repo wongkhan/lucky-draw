@@ -24,7 +24,7 @@
       border-radius: 12px;
       box-shadow: 0 4px 15px rgba(0,0,0,0.1);
       width: 100%;
-      max-width: 450px;
+      max-width: 480px;
       text-align: center;
     }
 
@@ -61,13 +61,14 @@
     /* Controls */
     textarea {
       width: 100%;
-      height: 140px;
+      height: 150px;
       padding: 10px;
       border: 1px solid #ccc;
       border-radius: 6px;
       box-sizing: border-box;
       font-size: 14px;
       resize: vertical;
+      font-family: monospace;
     }
     .primary-btn {
       margin-top: 15px;
@@ -138,6 +139,12 @@
     .option-box input {
       cursor: pointer;
     }
+    .hint-text {
+      font-size: 12px;
+      color: #6c757d;
+      margin-bottom: 8px;
+      text-align: left;
+    }
   </style>
 </head>
 <body>
@@ -152,8 +159,8 @@
     <!-- TAB 1: Manage Participants -->
     <div id="participantsTab" class="tab-content active">
       <h2>Participants List</h2>
-      <p>Enter names (one per line):</p>
-      <textarea id="participantsInput" placeholder="Alice&#10;Bob&#10;Charlie&#10;Diana" oninput="saveParticipants()"></textarea>
+      <div class="hint-text">Format: <code>Name - Entries</code> (e.g. <code>AAA - 5</code> or <code>BBB - 1</code>)</div>
+      <textarea id="participantsInput" placeholder="AAA - 5&#10;BBB - 1&#10;Charlie - 3" oninput="saveParticipants()"></textarea>
       
       <!-- Hidden File Input supporting Excel & Text -->
       <input type="file" id="fileImporter" accept=".xlsx,.xls,.csv,.txt" style="display: none;" onchange="handleFileImport(event)">
@@ -170,7 +177,7 @@
     <!-- TAB 2: Lucky Draw Menu -->
     <div id="drawTab" class="tab-content">
       <h2>🎉 Lucky Draw</h2>
-      <div id="participantCount" class="count-text">0 participants ready</div>
+      <div id="participantCount" class="count-text">0 participants (0 total entries) ready</div>
       <div id="display" class="display-box">Ready!</div>
 
       <div class="option-box">
@@ -209,49 +216,81 @@
       updateParticipantCount();
     }
 
-    function getNamesArray() {
+    // Parses raw lines into structured objects [{name: 'AAA', count: 5}, ...]
+    function getParsedParticipants() {
       const text = document.getElementById('participantsInput').value;
-      return text.split('\n').map(n => n.trim()).filter(n => n !== '');
+      const lines = text.split('\n');
+      const list = [];
+
+      lines.forEach(line => {
+        let trimmed = line.trim();
+        if (!trimmed) return;
+
+        let name = trimmed;
+        let count = 1;
+
+        // Matches formats like "AAA - 5", "AAA, 5", "AAA 5", or "AAA: 5"
+        const match = trimmed.match(/^(.*?)(?:\s*[-,:]\s*|\s+)(\d+)$/);
+        if (match) {
+          name = match[1].trim();
+          count = parseInt(match[2], 10) || 1;
+        }
+
+        if (name) {
+          list.push({ name: name, count: count });
+        }
+      });
+
+      return list;
+    }
+
+    // Creates flat pool where names with 5 entries appear 5 times
+    function buildWeightedPool(parsedList) {
+      const pool = [];
+      parsedList.forEach(item => {
+        for (let i = 0; i < item.count; i++) {
+          pool.push(item.name);
+        }
+      });
+      return pool;
     }
 
     function updateParticipantCount() {
-      const names = getNamesArray();
-      document.getElementById('participantCount').innerText = `${names.length} participant(s) ready`;
+      const parsedList = getParsedParticipants();
+      const pool = buildWeightedPool(parsedList);
+      document.getElementById('participantCount').innerText = 
+        `${parsedList.length} unique participant(s) (${pool.length} total entries) ready`;
     }
 
-    // Import File Handler for Excel (.xlsx, .xls), CSV, and TXT
+    // Import File Handler (Excel Column A = Name, Column B = Entries)
     function handleFileImport(event) {
       const file = event.target.files[0];
       if (!file) return;
 
       const fileName = file.name.toLowerCase();
       
-      // Handle Excel files (.xlsx, .xls)
       if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
         const reader = new FileReader();
         reader.onload = function(e) {
           const data = new Uint8Array(e.target.result);
           const workbook = XLSX.read(data, { type: 'array' });
-          
-          // Get first sheet
           const firstSheetName = workbook.SheetNames[0];
           const worksheet = workbook.Sheets[firstSheetName];
-          
-          // Convert sheet to JSON rows
           const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
           
-          // Flatten first column values into a list of names
-          const extractedNames = rows
-            .map(row => row[0])
-            .filter(name => name !== undefined && name !== null && String(name).trim() !== '')
-            .map(name => String(name).trim());
+          const formattedLines = [];
+          rows.forEach(row => {
+            if (row[0] !== undefined && row[0] !== null && String(row[0]).trim() !== '') {
+              const name = String(row[0]).trim();
+              const count = (row[1] !== undefined && row[1] !== null && !isNaN(row[1])) ? parseInt(row[1], 10) : 1;
+              formattedLines.push(`${name} - ${count}`);
+            }
+          });
 
-          applyImportedNames(extractedNames.join('\n'));
+          applyImportedNames(formattedLines.join('\n'));
         };
         reader.readAsArrayBuffer(file);
-      } 
-      // Handle Plain Text & CSV files (.txt, .csv)
-      else {
+      } else {
         const reader = new FileReader();
         reader.onload = function(e) {
           applyImportedNames(e.target.result.trim());
@@ -259,11 +298,9 @@
         reader.readAsText(file);
       }
 
-      // Reset file input so user can import the same file again if needed
       event.target.value = '';
     }
 
-    // Process & apply new names into the input box
     function applyImportedNames(newText) {
       const currentInput = document.getElementById('participantsInput');
       
@@ -285,7 +322,6 @@
       setTimeout(() => { msg.innerText = 'Saved to browser memory!'; }, 2000);
     }
 
-    // Clear list function
     function clearAllParticipants() {
       if (confirm("Are you sure you want to clear all names?")) {
         document.getElementById('participantsInput').value = '';
@@ -294,13 +330,14 @@
     }
 
     function pickWinner() {
-      const names = getNamesArray();
+      const parsedList = getParsedParticipants();
+      const pool = buildWeightedPool(parsedList);
       const display = document.getElementById('display');
       const btn = document.getElementById('drawBtn');
       const removeCheck = document.getElementById('removeWinnerCheck');
 
-      if (names.length === 0) {
-        alert('No participants left! Switch to the Participants tab to add more names.');
+      if (pool.length === 0) {
+        alert('No entries left! Switch to the Participants tab to add more names.');
         return;
       }
 
@@ -310,22 +347,26 @@
       const speed = 80;
       const totalCycles = 30;
 
+      // Shuffle visual display
       const interval = setInterval(() => {
-        const randomIndex = Math.floor(Math.random() * names.length);
-        display.innerText = names[randomIndex];
+        const randomIndex = Math.floor(Math.random() * pool.length);
+        display.innerText = pool[randomIndex];
         counter++;
 
         if (counter >= totalCycles) {
           clearInterval(interval);
           
-          const winnerIndex = Math.floor(Math.random() * names.length);
-          const finalWinner = names[winnerIndex];
+          // Select final winner from weighted pool
+          const winnerIndex = Math.floor(Math.random() * pool.length);
+          const finalWinner = pool[winnerIndex];
           
           display.innerText = `🏆 ${finalWinner}!`;
 
+          // If checkbox is checked, remove the winner entirely from the input list
           if (removeCheck.checked) {
-            names.splice(winnerIndex, 1);
-            document.getElementById('participantsInput').value = names.join('\n');
+            const updatedList = parsedList.filter(item => item.name !== finalWinner);
+            const newText = updatedList.map(item => `${item.name} - ${item.count}`).join('\n');
+            document.getElementById('participantsInput').value = newText;
             saveParticipants();
           }
 
